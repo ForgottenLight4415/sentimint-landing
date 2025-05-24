@@ -15,43 +15,61 @@ export default function Home() {
     { id: 2, name: 'Technical Indicator', icon: BarChart3, status: 'idle', description: 'Processing technical signals' },
     { id: 3, name: 'News Processor', icon: FileText, status: 'idle', description: 'Scanning latest news' }
   ])
-  const [decision, setDecision] = useState<{ type: 'BUY' | 'SELL', confidence: number, price: string } | null>(null)
+  const [decision, setDecision] = useState<{ type: 'BUY' | 'SELL' } | null>(null)
+
+  const [confidence, setConfidence] = useState<number>(0);
+  const [stockPrice, setStockPrice] = useState<number>(0);
+  const [newsHeadlines, setNewsHeadlines] = useState<Article[]>([]);
+  const [justification, setJustification] = useState<string>('');
 
   const handleSearch = async () => {
-    if (!searchTerm.trim()) return
+    if (!searchTerm) return
     
     setIsSearching(true)
     setShowResults(false)
     setDecision(null)
-    
+
     // Reset agents
     setAgents(prev => prev.map(agent => ({ ...agent, status: 'idle' })))
-    
-    // Simulate agent processing
+
     for (let i = 0; i < agents.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 800))
       setAgents(prev => prev.map((agent, index) => 
         index === i ? { ...agent, status: 'processing' } : agent
       ))
-      
-      await new Promise(resolve => setTimeout(resolve, 1200))
+    }
+
+    const res = await fetch(`http://127.0.0.1:5050/insight`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: searchTerm.trim() })
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      console.error('Error fetching insights:', data)
+      setIsSearching(false)
+      return
+    }
+    
+    setNewsHeadlines(data.news_articles.map((article: Article) => ({
+      title: article.title,
+      link: article.link,
+      summary: article.summary,
+    })));
+    setConfidence(data.recommendation.confidence);
+    setStockPrice(parseFloat(data.financials.stock_price));
+    setJustification(data.justification);
+
+    const decisions = ['BUY', 'SELL'] as const
+    const randomDecision = decisions[data.recommendation.decision === 'Buy' ? 0 : 1]
+    setDecision({ type: randomDecision })
+    
+    for (let i = 0; i < agents.length; i++) {
       setAgents(prev => prev.map((agent, index) => 
         index === i ? { ...agent, status: 'completed' } : agent
       ))
     }
-    
-    // Generate decision after all agents complete
-    await new Promise(resolve => setTimeout(resolve, 500))
-    const decisions = ['BUY', 'SELL'] as const
-    const randomDecision = decisions[Math.floor(Math.random() * decisions.length)]
-    const confidence = Math.floor(Math.random() * 30) + 70 // 70-99% confidence
-    const price = `$${(Math.random() * 200 + 50).toFixed(2)}`
-    
-    setDecision({
-      type: randomDecision,
-      confidence,
-      price
-    })
     
     setIsSearching(false)
     setShowResults(true)
@@ -118,13 +136,13 @@ export default function Home() {
           <div className="max-w-2xl mx-auto">
             <div className="flex gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 h-5 w-5" />
                 <Input
                   type="text"
                   placeholder="Enter a ticker symbol (e.g., TSLA, AAPL, MSFT)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 py-3 text-lg"
+                  className="pl-10 py-3 text-lg text-gray-600"
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
@@ -187,13 +205,13 @@ export default function Home() {
                   {decision.type} SIGNAL
                 </h3>
                 <p className="text-lg text-gray-700 mb-2">
-                  Confidence: {decision.confidence}%
+                  Confidence: {confidence}%
                 </p>
                 <p className="text-lg text-gray-700">
-                  Target Price: {decision.price}
+                  Stock Price: {stockPrice.toFixed(2)}
                 </p>
                 <div className="mt-4 text-sm text-gray-600">
-                  Based on sentiment analysis, technical indicators, and news processing
+                  {justification || 'No justification provided.'}
                 </div>
               </CardContent>
             </Card>
@@ -207,20 +225,17 @@ export default function Home() {
               Latest News for {searchTerm.toUpperCase()}
             </h3>
             <div className="space-y-4">
-              {mockNews.map((article, index) => (
+              {newsHeadlines.map((article, index) => (
                 <Card key={index} className="hover:shadow-md transition-shadow duration-200">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-lg font-semibold text-gray-900 flex-1 mr-4">
                         {article.title}
                       </h4>
-                      <span className="text-sm text-gray-500 whitespace-nowrap">
-                        {article.time}
-                      </span>
                     </div>
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-sm font-medium text-mint-600">
-                        {article.source}
+                        <a href={article.link}>Follow article</a>
                       </span>
                     </div>
                     <p className="text-gray-600">
