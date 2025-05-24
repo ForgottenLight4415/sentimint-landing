@@ -11,13 +11,13 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
   const [agents, setAgents] = useState([
-    { id: 1, name: 'Sentiment Analyzer', icon: TrendingUp, status: 'idle', description: 'Analyzing market sentiment' },
-    { id: 2, name: 'Technical Indicator', icon: BarChart3, status: 'idle', description: 'Processing technical signals' },
-    { id: 3, name: 'News Processor', icon: FileText, status: 'idle', description: 'Scanning latest news' }
+    { id: 1, name: 'Gathering Information', icon: TrendingUp, status: 'idle', description: 'Collecting information from various sources' },
+    { id: 2, name: 'Processing', icon: BarChart3, status: 'idle', description: 'Analyzing technical insights' },
+    { id: 3, name: 'Verifying', icon: FileText, status: 'idle', description: 'Finalizing signal' }
   ])
   const [decision, setDecision] = useState<{ type: 'BUY' | 'SELL' } | null>(null)
 
-  const [confidence, setConfidence] = useState<number>(0);
+  const [confidence, setConfidence] = useState<string>('');
   const [stockPrice, setStockPrice] = useState<number>(0);
   const [newsHeadlines, setNewsHeadlines] = useState<Article[]>([]);
   const [justification, setJustification] = useState<string>('');
@@ -57,7 +57,7 @@ export default function Home() {
       link: article.link,
       summary: article.summary,
     })));
-    setConfidence(data.recommendation.confidence);
+    setConfidence(data.confidence);
     setStockPrice(parseFloat(data.financials.stock_price));
     setJustification(data.justification);
 
@@ -91,19 +91,6 @@ export default function Home() {
     }
   }
 
-  const mockNews = [
-    { title: `${searchTerm || 'TSLA'} Reports Strong Q4 Earnings, Beats Expectations`, source: 'Reuters', time: '2 hours ago', summary: 'Company revenue exceeded analyst predictions by 12%, showing robust growth in key markets.' },
-    { title: `Market Analysis: ${searchTerm || 'TSLA'} Shows Bullish Technical Patterns`, source: 'Bloomberg', time: '3 hours ago', summary: 'Technical indicators suggest potential upward momentum in the coming weeks.' },
-    { title: `${searchTerm || 'TSLA'} Announces Strategic Partnership with Major Tech Firm`, source: 'CNBC', time: '4 hours ago', summary: 'The collaboration is expected to drive innovation and expand market reach significantly.' },
-    { title: `Analyst Upgrade: ${searchTerm || 'TSLA'} Raised to Buy Rating`, source: 'MarketWatch', time: '5 hours ago', summary: 'Leading investment firm increases price target citing strong fundamentals.' },
-    { title: ` ${searchTerm || 'TSLA'} Insider Trading Activity Shows Confidence`, source: 'Financial Times', time: '6 hours ago', summary: 'Recent insider purchases indicate management confidence in future prospects.' },
-    { title: `Sector Analysis: ${searchTerm || 'TSLA'} Outperforms Industry Peers`, source: 'Wall Street Journal', time: '7 hours ago', summary: 'Company demonstrates superior performance metrics compared to competitors.' },
-    { title: `${searchTerm || 'TSLA'} Innovation Drive Attracts Institutional Interest`, source: 'Yahoo Finance', time: '8 hours ago', summary: 'Major institutional investors increase positions following recent developments.' },
-    { title: `Economic Impact: ${searchTerm || 'TSLA'} Expansion Plans Unveiled`, source: 'Forbes', time: '9 hours ago', summary: 'Ambitious growth strategy could significantly impact market dynamics.' },
-    { title: `${searchTerm || 'TSLA'} Sustainability Initiative Gains Market Approval`, source: 'CNN Business', time: '10 hours ago', summary: 'Environmental focus resonates well with ESG-conscious investors.' },
-    { title: `Trading Volume Surge: ${searchTerm || 'TSLA'} Sees Increased Activity`, source: 'Seeking Alpha', time: '11 hours ago', summary: 'Unusual trading patterns suggest heightened investor interest and potential catalysts.' }
-  ]
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -114,9 +101,11 @@ export default function Home() {
               Senti<span className="text-mint-500">mint</span>
             </h1>
             <nav className="hidden md:flex space-x-8">
-              <a href="#" className="text-gray-600 hover:text-gray-900">Docs</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Pricing</a>
-              <Button variant="outline">Sign In</Button>
+              {/* <a href="#" className="text-gray-600 hover:text-gray-900">Docs</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900">Pricing</a> */}
+              <Button className="text-emerald-500 hover:bg-emerald-500 hover:text-white" variant="outline" onClick={
+                () => window.open('https://github.com/ForgottenLight4415/sentimint-landing', '_blank')
+              }>GitHub</Button>
             </nav>
           </div>
         </div>
@@ -139,7 +128,7 @@ export default function Home() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 h-5 w-5" />
                 <Input
                   type="text"
-                  placeholder="Enter a ticker symbol (e.g., TSLA, AAPL, MSFT)..."
+                  placeholder="Enter a company name or ticker symbol (e.g., Tesla, Apple, Microsoft)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 py-3 text-lg text-gray-600"
@@ -205,7 +194,7 @@ export default function Home() {
                   {decision.type} SIGNAL
                 </h3>
                 <p className="text-lg text-gray-700 mb-2">
-                  Confidence: {confidence}%
+                  Confidence: {confidence}
                 </p>
                 <p className="text-lg text-gray-700">
                   Stock Price: {stockPrice.toFixed(2)}
